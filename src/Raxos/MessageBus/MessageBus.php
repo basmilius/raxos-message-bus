@@ -9,6 +9,7 @@ use PhpAmqpLib\Exception\AMQPTimeoutException;
 use PhpAmqpLib\Wire\AMQPTable;
 use Raxos\Foundation\Collection\ArrayList;
 use Raxos\Foundation\Contract\ArrayListInterface;
+use Raxos\MessageBus\Contract\{MessageBusInterface, MessageBusQueueInterface};
 use Raxos\MessageBus\Error\MessageBusException;
 use SensitiveParameter;
 
@@ -19,7 +20,7 @@ use SensitiveParameter;
  * @package Raxos\MessageBus
  * @since 1.8.0
  */
-final readonly class MessageBus
+final readonly class MessageBus implements MessageBusInterface
 {
 
     private AMQPStreamConnection $connection;
@@ -54,10 +55,7 @@ final readonly class MessageBus
     }
 
     /**
-     * Closes the connection.
-     *
-     * @return void
-     * @throws MessageBusException
+     * {@inheritdoc}
      * @author Bas Milius <bas@mili.us>
      * @since 1.8.0
      */
@@ -72,17 +70,11 @@ final readonly class MessageBus
     }
 
     /**
-     * Creates a new queue with the given name.
-     *
-     * @param string $name
-     * @param int $maxMessages
-     *
-     * @return MessageBusQueue
-     * @throws MessageBusException
+     * {@inheritdoc}
      * @author Bas Milius <bas@mili.us>
      * @since 1.8.0
      */
-    public function createQueue(string $name = 'task_queue', int $maxMessages = 25): MessageBusQueue
+    public function createQueue(string $name = 'task_queue', int $maxMessages = 25): MessageBusQueueInterface
     {
         try {
             $channel = $this->connection->channel();
@@ -98,17 +90,11 @@ final readonly class MessageBus
     }
 
     /**
-     * Remove the channel reference.
-     *
-     * @param MessageBusQueue $queue
-     *
-     * @return void
+     * {@inheritdoc}
      * @author Bas Milius <bas@mili.us>
      * @since 1.8.0
-     * @internal
-     * @private
      */
-    public function removeQueue(MessageBusQueue $queue): void
+    public function removeQueue(MessageBusQueueInterface $queue): void
     {
         $offset = $this->channels->search($queue);
         $this->channels->splice($offset, 1);

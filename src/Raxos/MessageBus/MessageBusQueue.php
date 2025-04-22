@@ -8,7 +8,7 @@ use PhpAmqpLib\Channel\AMQPChannel;
 use PhpAmqpLib\Message\AMQPMessage;
 use Raxos\Foundation\Util\Singleton;
 use Raxos\MessageBus\Attribute\Handler;
-use Raxos\MessageBus\Contract\{HandlerInterface, MessageInterface};
+use Raxos\MessageBus\Contract\{MessageBusQueueInterface, MessageInterface};
 use Raxos\MessageBus\Enum\MessagePriority;
 use Raxos\MessageBus\Error\MessageBusException;
 use ReflectionClass;
@@ -22,7 +22,7 @@ use function unserialize;
  * @package Raxos\MessageBus
  * @since 1.8.0
  */
-final readonly class MessageBusQueue
+final readonly class MessageBusQueue implements MessageBusQueueInterface
 {
 
     /**
@@ -44,9 +44,7 @@ final readonly class MessageBusQueue
     ) {}
 
     /**
-     * Closes the queue.
-     *
-     * @return void
+     * {@inheritdoc}
      * @author Bas Milius <bas@mili.us>
      * @since 1.8.0
      */
@@ -57,12 +55,7 @@ final readonly class MessageBusQueue
     }
 
     /**
-     * Consume messages in the queue.
-     *
-     * @param callable(HandlerInterface, MessageInterface):void $callback
-     *
-     * @return void
-     * @throws MessageBusException
+     * {@inheritdoc}
      * @author Bas Milius <bas@mili.us>
      * @since 1.8.0
      */
@@ -84,10 +77,13 @@ final readonly class MessageBusQueue
             $handlerAttribute = $handlerAttribute->newInstance();
             $handler = Singleton::get($handlerAttribute->handlerClass);
 
-            $callback($handler, $message);
+            if ($callback($handler, $message)) {
+                $msg->ack();
+            } else {
+                $msg->nack(requeue: true);
+            }
 
             $counter++;
-            $msg->ack();
 
             if ($counter >= $this->maxMessages) {
                 exit(1);
@@ -113,13 +109,7 @@ final readonly class MessageBusQueue
     }
 
     /**
-     * Publish a message to the queue.
-     *
-     * @param MessageInterface $message
-     * @param MessagePriority $priority
-     *
-     * @return void
-     * @throws MessageBusException
+     * {@inheritdoc}
      * @author Bas Milius <bas@mili.us>
      * @since 1.8.0
      */
