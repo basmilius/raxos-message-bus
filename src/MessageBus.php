@@ -7,10 +7,11 @@ use Exception;
 use PhpAmqpLib\Connection\AMQPStreamConnection;
 use PhpAmqpLib\Exception\AMQPTimeoutException;
 use PhpAmqpLib\Wire\AMQPTable;
-use Raxos\Foundation\Collection\ArrayList;
-use Raxos\Foundation\Contract\ArrayListInterface;
-use Raxos\MessageBus\Contract\{MessageBusInterface, MessageBusQueueInterface};
-use Raxos\MessageBus\Error\MessageBusException;
+use Raxos\Collection\ArrayList;
+use Raxos\Contract\Collection\ArrayListInterface;
+use Raxos\Contract\MessageBus\{MessageBusExceptionInterface, MessageBusInterface, MessageBusQueueInterface};
+use Raxos\MessageBus\Error\MessageBusConnectionException;
+use Raxos\MessageBus\Error\MessageBusTimeoutException;
 use SensitiveParameter;
 
 /**
@@ -34,7 +35,7 @@ final readonly class MessageBus implements MessageBusInterface
      * @param string $username
      * @param string $password
      *
-     * @throws MessageBusException
+     * @throws MessageBusExceptionInterface
      * @author Bas Milius <bas@mili.us>
      * @since 1.8.0
      */
@@ -50,7 +51,7 @@ final readonly class MessageBus implements MessageBusInterface
         try {
             $this->connection = new AMQPStreamConnection($host, $port, $username, $password);
         } catch (Exception $err) {
-            throw MessageBusException::connection($err);
+            throw new MessageBusConnectionException($err);
         }
     }
 
@@ -65,7 +66,7 @@ final readonly class MessageBus implements MessageBusInterface
             $this->channels->each(static fn(MessageBusQueue $queue) => $queue->close());
             $this->connection->close();
         } catch (Exception $err) {
-            throw MessageBusException::connection($err);
+            throw new MessageBusConnectionException($err);
         }
     }
 
@@ -85,7 +86,7 @@ final readonly class MessageBus implements MessageBusInterface
 
             return $queue;
         } catch (AMQPTimeoutException $err) {
-            throw MessageBusException::timeout($err);
+            throw new MessageBusTimeoutException($err);
         }
     }
 

@@ -4,7 +4,7 @@ declare(strict_types=1);
 namespace Raxos\MessageBus\Attribute;
 
 use Attribute;
-use Raxos\MessageBus\Contract\HandlerInterface;
+use Raxos\Contract\MessageBus\HandlerInterface;
 
 /**
  * Class Handler

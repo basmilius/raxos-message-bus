@@ -3,14 +3,15 @@ declare(strict_types=1);
 
 namespace Raxos\MessageBus;
 
+use Error\MessageBusConsumeException;
 use Exception;
 use PhpAmqpLib\Channel\AMQPChannel;
 use PhpAmqpLib\Message\AMQPMessage;
+use Raxos\Contract\MessageBus\{MessageBusQueueInterface, MessageInterface};
 use Raxos\Foundation\Util\Singleton;
 use Raxos\MessageBus\Attribute\Handler;
-use Raxos\MessageBus\Contract\{MessageBusQueueInterface, MessageInterface};
 use Raxos\MessageBus\Enum\MessagePriority;
-use Raxos\MessageBus\Error\MessageBusException;
+use Raxos\MessageBus\Error\{MessageBusMissingHandlerException, MessageBusPublishException};
 use ReflectionClass;
 use function serialize;
 use function unserialize;
@@ -71,7 +72,7 @@ final readonly class MessageBusQueue implements MessageBusQueueInterface
             $handlerAttribute = $classRef->getAttributes(Handler::class)[0] ?? null;
 
             if ($handlerAttribute === null) {
-                throw MessageBusException::missingHandler($message::class);
+                throw new MessageBusMissingHandlerException($message::class);
             }
 
             $handlerAttribute = $handlerAttribute->newInstance();
@@ -104,7 +105,7 @@ final readonly class MessageBusQueue implements MessageBusQueueInterface
 
             $this->channel->consume();
         } catch (Exception $err) {
-            throw MessageBusException::consume($err);
+            throw new MessageBusConsumeException($err);
         }
     }
 
@@ -123,7 +124,7 @@ final readonly class MessageBusQueue implements MessageBusQueueInterface
 
             $this->channel->basic_publish($message, routing_key: $this->name);
         } catch (Exception $err) {
-            throw MessageBusException::publish($err);
+            throw new MessageBusPublishException($err);
         }
     }
 
