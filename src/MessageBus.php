@@ -3,7 +3,6 @@ declare(strict_types=1);
 
 namespace Raxos\MessageBus;
 
-use Exception;
 use PhpAmqpLib\Connection\AMQPStreamConnection;
 use PhpAmqpLib\Exception\AMQPTimeoutException;
 use PhpAmqpLib\Wire\AMQPTable;
@@ -13,6 +12,7 @@ use Raxos\Contract\MessageBus\{MessageBusExceptionInterface, MessageBusInterface
 use Raxos\MessageBus\Error\MessageBusConnectionException;
 use Raxos\MessageBus\Error\MessageBusTimeoutException;
 use SensitiveParameter;
+use Throwable;
 
 /**
  * Class MessageBus
@@ -50,7 +50,7 @@ final readonly class MessageBus implements MessageBusInterface
 
         try {
             $this->connection = new AMQPStreamConnection($host, $port, $username, $password);
-        } catch (Exception $err) {
+        } catch (Throwable $err) {
             throw new MessageBusConnectionException($err);
         }
     }
@@ -65,7 +65,7 @@ final readonly class MessageBus implements MessageBusInterface
         try {
             $this->channels->each(static fn(MessageBusQueue $queue) => $queue->close());
             $this->connection->close();
-        } catch (Exception $err) {
+        } catch (Throwable $err) {
             throw new MessageBusConnectionException($err);
         }
     }
