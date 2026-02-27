@@ -3,14 +3,13 @@ declare(strict_types=1);
 
 namespace Raxos\MessageBus;
 
-use Error\MessageBusConsumeException;
 use PhpAmqpLib\Channel\AMQPChannel;
 use PhpAmqpLib\Message\AMQPMessage;
 use Raxos\Contract\MessageBus\{MessageBusQueueInterface, MessageInterface};
 use Raxos\Foundation\Util\Singleton;
 use Raxos\MessageBus\Attribute\Handler;
 use Raxos\MessageBus\Enum\MessagePriority;
-use Raxos\MessageBus\Error\{MessageBusMissingHandlerException, MessageBusPublishException};
+use Raxos\MessageBus\Error\{MessageBusConsumeException, MessageBusMissingHandlerException, MessageBusPublishException};
 use ReflectionClass;
 use Throwable;
 use function serialize;

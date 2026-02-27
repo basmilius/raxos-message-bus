@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
 
-namespace Error;
+namespace Raxos\MessageBus\Error;
 
 use Raxos\Contract\MessageBus\MessageBusExceptionInterface;
 use Raxos\Error\Exception;
