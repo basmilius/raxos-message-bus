@@ -65,7 +65,13 @@ final readonly class MessageBusQueue implements MessageBusQueueInterface
 
         $consumer = function (AMQPMessage $msg) use ($callback, &$counter): void {
             $body = $msg->getBody();
-            $message = unserialize($body);
+            $message = unserialize($body, ['allowed_classes' => true]);
+
+            if (!$message instanceof MessageInterface) {
+                $msg->nack();
+
+                return;
+            }
 
             $classRef = new ReflectionClass($message);
             $handlerAttribute = $classRef->getAttributes(Handler::class)[0] ?? null;
@@ -77,16 +83,21 @@ final readonly class MessageBusQueue implements MessageBusQueueInterface
             $handlerAttribute = $handlerAttribute->newInstance();
             $handler = Singleton::get($handlerAttribute->handlerClass);
 
-            if ($callback($handler, $message)) {
-                $msg->ack();
-            } else {
+            try {
+                if ($callback($handler, $message)) {
+                    $msg->ack();
+                } else {
+                    $msg->nack(requeue: true);
+                }
+            } catch (Throwable $err) {
                 $msg->nack(requeue: true);
+                throw new MessageBusConsumeException($err);
             }
 
             $counter++;
 
             if ($counter >= $this->maxMessages) {
-                exit(1);
+                $this->channel->basic_cancel($msg->getConsumerTag());
             }
         };
 
