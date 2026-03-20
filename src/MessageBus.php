@@ -98,6 +98,11 @@ final readonly class MessageBus implements MessageBusInterface
     public function removeQueue(MessageBusQueueInterface $queue): void
     {
         $offset = $this->channels->search($queue);
+
+        if ($offset === null) {
+            return;
+        }
+
         $this->channels->splice($offset, 1);
     }
 

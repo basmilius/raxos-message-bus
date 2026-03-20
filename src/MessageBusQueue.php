@@ -32,6 +32,7 @@ final readonly class MessageBusQueue implements MessageBusQueueInterface
      * @param string $name
      * @param AMQPChannel $channel
      * @param int $maxMessages
+     * @param array<class-string>|true $allowedClasses Restrict deserialization to these classes. Defaults to true (all classes) for backwards compatibility. Should be restricted in production.
      *
      * @author Bas Milius <bas@mili.us>
      * @since 1.8.0
@@ -40,7 +41,8 @@ final readonly class MessageBusQueue implements MessageBusQueueInterface
         public MessageBus $messageBus,
         public string $name,
         private AMQPChannel $channel,
-        private int $maxMessages = 25
+        private int $maxMessages = 25,
+        private array|true $allowedClasses = true
     ) {}
 
     /**
@@ -65,7 +67,7 @@ final readonly class MessageBusQueue implements MessageBusQueueInterface
 
         $consumer = function (AMQPMessage $msg) use ($callback, &$counter): void {
             $body = $msg->getBody();
-            $message = unserialize($body, ['allowed_classes' => true]);
+            $message = unserialize($body, ['allowed_classes' => $this->allowedClasses]);
 
             if (!$message instanceof MessageInterface) {
                 $msg->nack();
