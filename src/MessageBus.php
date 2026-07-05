@@ -34,6 +34,7 @@ final readonly class MessageBus implements MessageBusInterface
      * @param int $port
      * @param string $username
      * @param string $password
+     * @param string $vhost
      *
      * @throws MessageBusExceptionInterface
      * @author Bas Milius <bas@mili.us>
@@ -43,13 +44,14 @@ final readonly class MessageBus implements MessageBusInterface
         #[SensitiveParameter] string $host,
         #[SensitiveParameter] int $port,
         #[SensitiveParameter] string $username,
-        #[SensitiveParameter] string $password
+        #[SensitiveParameter] string $password,
+        string $vhost = '/'
     )
     {
         $this->channels = new ArrayList();
 
         try {
-            $this->connection = new AMQPStreamConnection($host, $port, $username, $password);
+            $this->connection = new AMQPStreamConnection($host, $port, $username, $password, $vhost);
         } catch (Throwable $err) {
             throw new MessageBusConnectionException($err);
         }
