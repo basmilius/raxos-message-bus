@@ -7,7 +7,6 @@ use PhpAmqpLib\Connection\AMQPStreamConnection;
 use PhpAmqpLib\Exception\AMQPTimeoutException;
 use PhpAmqpLib\Wire\AMQPTable;
 use Raxos\Collection\ArrayList;
-use Raxos\Contract\Collection\ArrayListInterface;
 use Raxos\Contract\MessageBus\{MessageBusExceptionInterface, MessageBusInterface, MessageBusQueueInterface};
 use Raxos\MessageBus\Error\MessageBusConnectionException;
 use Raxos\MessageBus\Error\MessageBusTimeoutException;
@@ -25,7 +24,13 @@ final readonly class MessageBus implements MessageBusInterface
 {
 
     private AMQPStreamConnection $connection;
-    private ArrayListInterface $channels;
+
+    /**
+     * @var ArrayList<int, MessageBusQueueInterface>
+     * @author Bas Milius <bas@mili.us>
+     * @since 3.2.0
+     */
+    private ArrayList $channels;
 
     /**
      * MessageBus constructor.
@@ -35,23 +40,25 @@ final readonly class MessageBus implements MessageBusInterface
      * @param string $username
      * @param string $password
      * @param string $vhost
+     * @param AMQPStreamConnection|null $connection
      *
      * @throws MessageBusExceptionInterface
      * @author Bas Milius <bas@mili.us>
-     * @since 1.8.0
+     * @since 3.2.0
      */
     public function __construct(
         #[SensitiveParameter] string $host,
         #[SensitiveParameter] int $port,
         #[SensitiveParameter] string $username,
         #[SensitiveParameter] string $password,
-        string $vhost = '/'
+        string $vhost = '/',
+        ?AMQPStreamConnection $connection = null
     )
     {
         $this->channels = new ArrayList();
 
         try {
-            $this->connection = new AMQPStreamConnection($host, $port, $username, $password, $vhost);
+            $this->connection = $connection ?? new AMQPStreamConnection($host, $port, $username, $password, $vhost);
         } catch (Throwable $err) {
             throw new MessageBusConnectionException($err);
         }
@@ -74,16 +81,17 @@ final readonly class MessageBus implements MessageBusInterface
 
     /**
      * {@inheritdoc}
+     * @param class-string[] $allowedClasses
      * @author Bas Milius <bas@mili.us>
-     * @since 1.8.0
+     * @since 3.2.0
      */
-    public function createQueue(string $name = 'task_queue', int $maxMessages = 25): MessageBusQueueInterface
+    public function createQueue(string $name = 'task_queue', int $maxMessages = 25, array $allowedClasses = []): MessageBusQueueInterface
     {
         try {
             $channel = $this->connection->channel();
             $channel->queue_declare($name, false, true, false, false, false, new AMQPTable(['x-max-priority' => 5]));
 
-            $queue = new MessageBusQueue($this, $name, $channel, $maxMessages);
+            $queue = new MessageBusQueue($this, $name, $channel, $maxMessages, $allowedClasses);
             $this->channels->append($queue);
 
             return $queue;
@@ -105,7 +113,7 @@ final readonly class MessageBus implements MessageBusInterface
             return;
         }
 
-        $this->channels->splice($offset, 1);
+        unset($this->channels[$offset]);
     }
 
 }

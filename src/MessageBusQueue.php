@@ -12,6 +12,9 @@ use Raxos\MessageBus\Enum\MessagePriority;
 use Raxos\MessageBus\Error\{MessageBusConsumeException, MessageBusMissingHandlerException, MessageBusPublishException};
 use ReflectionClass;
 use Throwable;
+use function in_array;
+use function is_a;
+use function preg_match;
 use function serialize;
 use function unserialize;
 
@@ -32,17 +35,17 @@ final readonly class MessageBusQueue implements MessageBusQueueInterface
      * @param string $name
      * @param AMQPChannel $channel
      * @param int $maxMessages
-     * @param array<class-string>|true $allowedClasses Restrict deserialization to these classes. Defaults to true (all classes) for backwards compatibility. Should be restricted in production.
+     * @param class-string[] $allowedClasses
      *
      * @author Bas Milius <bas@mili.us>
-     * @since 1.8.0
+     * @since 3.2.0
      */
     public function __construct(
         public MessageBus $messageBus,
         public string $name,
         private AMQPChannel $channel,
         private int $maxMessages = 25,
-        private array|true $allowedClasses = true
+        private array $allowedClasses = []
     ) {}
 
     /**
@@ -67,7 +70,17 @@ final readonly class MessageBusQueue implements MessageBusQueueInterface
 
         $consumer = function (AMQPMessage $msg) use ($callback, &$counter): void {
             $body = $msg->getBody();
-            $message = unserialize($body, ['allowed_classes' => $this->allowedClasses]);
+            if (!preg_match('/^O:\d+:"([^"]+)":/', $body, $matches) || !in_array($matches[1], $this->allowedClasses, true) || !is_a($matches[1], MessageInterface::class, true)) {
+                $msg->nack();
+                return;
+            }
+
+            try {
+                $message = @unserialize($body, ['allowed_classes' => $this->allowedClasses]);
+            } catch (Throwable) {
+                $msg->nack();
+                return;
+            }
 
             if (!$message instanceof MessageInterface) {
                 $msg->nack();
