@@ -19,7 +19,7 @@ Publish and consume serialized PHP messages through RabbitMQ queues.
 Requires PHP 8.5 or later. Composer checks the remaining package and extension dependencies declared in [composer.json](composer.json).
 
 ```sh
-composer require "raxos/message-bus:^3.2"
+composer require "raxos/message-bus:^3.3"
 ```
 
 ## Usage
@@ -95,3 +95,5 @@ See [Testing Raxos](https://github.com/basmilius/raxos/blob/main/TESTING.md) for
 ## License
 
 [MIT](LICENSE). Copyright (c) 2017 - present Bas Milius.
+
+See [confirmed delivery and retries](https://raxos.dev/message-bus/delivery-policy) for the optional APIs and their lifetime or transport guarantees.

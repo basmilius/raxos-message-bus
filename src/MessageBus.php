@@ -7,7 +7,9 @@ use PhpAmqpLib\Connection\AMQPStreamConnection;
 use PhpAmqpLib\Exception\AMQPTimeoutException;
 use PhpAmqpLib\Wire\AMQPTable;
 use Raxos\Collection\ArrayList;
-use Raxos\Contract\MessageBus\{MessageBusExceptionInterface, MessageBusInterface, MessageBusQueueInterface};
+use Raxos\Contract\MessageBus\MessageBusExceptionInterface;
+use Raxos\Contract\MessageBus\MessageBusInterface;
+use Raxos\Contract\MessageBus\MessageBusQueueInterface;
 use Raxos\MessageBus\Error\MessageBusConnectionException;
 use Raxos\MessageBus\Error\MessageBusTimeoutException;
 use SensitiveParameter;
@@ -22,10 +24,18 @@ use Throwable;
  */
 final readonly class MessageBus implements MessageBusInterface
 {
-
+    /**
+     * Retains the connection used by this object for its entire lifetime.
+     *
+     * @var AMQPStreamConnection
+     * @author Bas Milius <bas@mili.us>
+     * @since 1.8.0
+     */
     private AMQPStreamConnection $connection;
 
     /**
+     * Tracks open queues so their channels can be closed with the bus.
+     *
      * @var ArrayList<int, MessageBusQueueInterface>
      * @author Bas Milius <bas@mili.us>
      * @since 3.2.0
@@ -44,7 +54,7 @@ final readonly class MessageBus implements MessageBusInterface
      *
      * @throws MessageBusExceptionInterface
      * @author Bas Milius <bas@mili.us>
-     * @since 3.2.0
+     * @since 1.8.0
      */
     public function __construct(
         #[SensitiveParameter] string $host,
@@ -82,16 +92,22 @@ final readonly class MessageBus implements MessageBusInterface
     /**
      * {@inheritdoc}
      * @param class-string[] $allowedClasses
+     * @param QueuePolicy|null $policy
      * @author Bas Milius <bas@mili.us>
-     * @since 3.2.0
+     * @since 1.8.0
      */
-    public function createQueue(string $name = 'task_queue', int $maxMessages = 25, array $allowedClasses = []): MessageBusQueueInterface
+    public function createQueue(
+        string $name = 'task_queue',
+        int $maxMessages = 25,
+        array $allowedClasses = [],
+        ?QueuePolicy $policy = null
+    ): MessageBusQueue
     {
         try {
             $channel = $this->connection->channel();
             $channel->queue_declare($name, false, true, false, false, false, new AMQPTable(['x-max-priority' => 5]));
 
-            $queue = new MessageBusQueue($this, $name, $channel, $maxMessages, $allowedClasses);
+            $queue = new MessageBusQueue($this, $name, $channel, $maxMessages, $allowedClasses, $policy);
             $this->channels->append($queue);
 
             return $queue;
@@ -115,5 +131,4 @@ final readonly class MessageBus implements MessageBusInterface
 
         unset($this->channels[$offset]);
     }
-
 }

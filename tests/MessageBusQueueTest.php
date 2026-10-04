@@ -4,12 +4,18 @@ declare(strict_types=1);
 use PhpAmqpLib\Channel\AMQPChannel;
 use PhpAmqpLib\Connection\AMQPStreamConnection;
 use PhpAmqpLib\Message\AMQPMessage;
+use Raxos\Contract\MessageBus\HandlerInterface;
 use Raxos\MessageBus\Enum\MessagePriority;
+use Raxos\MessageBus\Error\MessageBusConsumeException;
 use Raxos\MessageBus\Error\MessageBusPublishException;
 use Raxos\MessageBus\MessageBus;
-use RaxosTests\MessageBus\{Invitation, PoisonMessage};
+use Raxos\MessageBus\MessageBusQueue;
+use RaxosTests\MessageBus\Invitation;
+use RaxosTests\MessageBus\MissingHandlerMessage;
+use RaxosTests\MessageBus\PoisonMessage;
+use RaxosTests\MessageBus\ThrowingMessage;
 
-covers(Raxos\MessageBus\MessageBusQueue::class);
+covers(MessageBusQueue::class);
 
 it('removes a closed queue from the bus before shutting down', function (): void {
     $channel = $this->createMock(AMQPChannel::class);
@@ -34,13 +40,14 @@ it('rejects non-message objects before their hooks execute even when explicitly 
     $consumer = null;
     $channel->method('basic_consume')->willReturnCallback(static function (mixed ...$args) use (&$consumer): string {
         $consumer = $args[6];
+
         return 'test-consumer';
     });
     $channel->method('consume')->willReturnCallback(static function () use (&$consumer, $incoming): void {
         $consumer($incoming);
     });
     $bus = new MessageBus('unused', 5672, 'test', 'test', connection: $connection);
-    $bus->createQueue(allowedClasses: $allowed ? [PoisonMessage::class] : [])->consume(static fn () => throw new RuntimeException('Must not dispatch.'));
+    $bus->createQueue(allowedClasses: $allowed ? [PoisonMessage::class] : [])->consume(static fn() => throw new RuntimeException('Must not dispatch.'));
     expect(PoisonMessage::$executions)->toBe(0);
 })->with([false, true]);
 
@@ -54,23 +61,25 @@ it('rejects malformed and unauthorized payloads without invoking application han
     $consumer = null;
     $channel->method('basic_consume')->willReturnCallback(static function (mixed ...$arguments) use (&$consumer): string {
         $consumer = $arguments[6];
+
         return 'unit';
     });
     $channel->method('consume')->willReturnCallback(static function () use (&$consumer, $incoming): void {
         $consumer($incoming);
     });
     $bus = new MessageBus('unused', 5672, 'test', 'test', connection: $connection);
-    set_error_handler(static fn (int $severity, string $message): bool =>
+    set_error_handler(static fn(int $severity, string $message): bool =>
         $severity === E_WARNING && str_starts_with($message, 'unserialize():'));
+
     try {
-        $bus->createQueue(allowedClasses: $allowed)->consume(static fn (): never => throw new LogicException('Must not dispatch rejected payloads.'));
+        $bus->createQueue(allowedClasses: $allowed)->consume(static fn(): never => throw new LogicException('Must not dispatch rejected payloads.'));
     } finally {
         restore_error_handler();
     }
 })->with([
     ['not serialized', []], ['N;', []], [serialize(new Invitation('merchant', 'invite')), []],
     ['O:31:"RaxosTests\\MessageBus\\Invitation":1:{', [Invitation::class]],
-    [serialize(new RaxosTests\MessageBus\ThrowingMessage()), [RaxosTests\MessageBus\ThrowingMessage::class]]
+    [serialize(new ThrowingMessage()), [ThrowingMessage::class]]
 ]);
 
 it('cancels consumption when the configured message count is reached', function (): void {
@@ -86,6 +95,7 @@ it('cancels consumption when the configured message count is reached', function 
     $consumer = null;
     $channel->method('basic_consume')->willReturnCallback(static function (mixed ...$arguments) use (&$consumer): string {
         $consumer = $arguments[6];
+
         return 'unit-consumer';
     });
     $channel->method('consume')->willReturnCallback(static function () use (&$consumer, $incoming): void {
@@ -93,25 +103,26 @@ it('cancels consumption when the configured message count is reached', function 
         $consumer($incoming);
     });
     $bus = new MessageBus('unused', 5672, 'test', 'test', connection: $connection);
-    $bus->createQueue(maxMessages: 2, allowedClasses: [Invitation::class])->consume(static fn (): bool => true);
+    $bus->createQueue(maxMessages: 2, allowedClasses: [Invitation::class])->consume(static fn(): bool => true);
 });
 
 it('reports registered messages without a handler attribute as a consumption error', function (): void {
     $channel = $this->createMock(AMQPChannel::class);
     $connection = $this->createMock(AMQPStreamConnection::class);
     $connection->method('channel')->willReturn($channel);
-    $message = new AMQPMessage(serialize(new RaxosTests\MessageBus\MissingHandlerMessage()));
+    $message = new AMQPMessage(serialize(new MissingHandlerMessage()));
     $consumer = null;
     $channel->method('basic_consume')->willReturnCallback(static function (mixed ...$arguments) use (&$consumer): string {
         $consumer = $arguments[6];
+
         return 'unit';
     });
     $channel->method('consume')->willReturnCallback(static function () use (&$consumer, $message): void {
         $consumer($message);
     });
     $bus = new MessageBus('unused', 5672, 'test', 'test', connection: $connection);
-    expect(fn () => $bus->createQueue(allowedClasses: [RaxosTests\MessageBus\MissingHandlerMessage::class])->consume(static fn (): bool => true))
-        ->toThrow(Raxos\MessageBus\Error\MessageBusConsumeException::class);
+    expect(fn() => $bus->createQueue(allowedClasses: [MissingHandlerMessage::class])->consume(static fn(): bool => true))
+        ->toThrow(MessageBusConsumeException::class);
 });
 
 it('publishes persistent messages with the chosen priority and routing key', function (MessagePriority $priority): void {
@@ -135,6 +146,7 @@ it('preserves the transport failure as the publication exception cause', functio
     $connection->method('channel')->willReturn($channel);
     $channel->method('basic_publish')->willThrowException($failure);
     $bus = new MessageBus('unused', 5672, 'test', 'test', connection: $connection);
+
     try {
         $bus->createQueue()->publish(new Invitation('merchant', 'invitation'));
         $this->fail('Expected a publication failure.');
@@ -153,15 +165,17 @@ it('dispatches explicitly registered messages with the consumer payload shape', 
     $consumer = null;
     $channel->method('basic_consume')->willReturnCallback(static function (mixed ...$args) use (&$consumer): string {
         $consumer = $args[6];
+
         return 'test-consumer';
     });
     $channel->method('consume')->willReturnCallback(static function () use (&$consumer, $incoming): void {
         $consumer($incoming);
     });
     $bus = new MessageBus('unused', 5672, 'test', 'test', connection: $connection);
-    $bus->createQueue(allowedClasses: [Invitation::class])->consume(static function (Raxos\Contract\MessageBus\HandlerInterface $handler, Invitation $message): bool {
+    $bus->createQueue(allowedClasses: [Invitation::class])->consume(static function (HandlerInterface $handler, Invitation $message): bool {
         expect($message->merchantId)->toBe('merchant');
         expect($message->invitationId)->toBe('invitation');
+
         return true;
     });
 });
@@ -176,6 +190,7 @@ it('requeues rejected and failing handlers without acknowledging a delivery', fu
     $consumer = null;
     $channel->method('basic_consume')->willReturnCallback(static function (mixed ...$args) use (&$consumer): string {
         $consumer = $args[6];
+
         return 'test-consumer';
     });
     $channel->method('consume')->willReturnCallback(static function () use (&$consumer, $incoming): void {
@@ -186,10 +201,12 @@ it('requeues rejected and failing handlers without acknowledging a delivery', fu
         if ($throws) {
             throw new RuntimeException('handler failure');
         }
+
         return false;
     };
+
     if ($throws) {
-        expect(fn (): mixed => $bus->createQueue(allowedClasses: [Invitation::class])->consume($callback))->toThrow(Raxos\MessageBus\Error\MessageBusConsumeException::class);
+        expect(fn(): mixed => $bus->createQueue(allowedClasses: [Invitation::class])->consume($callback))->toThrow(MessageBusConsumeException::class);
     } else {
         $bus->createQueue(allowedClasses: [Invitation::class])->consume($callback);
     }
