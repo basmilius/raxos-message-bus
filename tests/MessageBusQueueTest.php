@@ -68,8 +68,7 @@ it('rejects malformed and unauthorized payloads without invoking application han
         $consumer($incoming);
     });
     $bus = new MessageBus('unused', 5672, 'test', 'test', connection: $connection);
-    set_error_handler(static fn(int $severity, string $message): bool =>
-        $severity === E_WARNING && str_starts_with($message, 'unserialize():'));
+    set_error_handler(static fn(int $severity, string $message): bool => $severity === E_WARNING && str_starts_with($message, 'unserialize():'));
 
     try {
         $bus->createQueue(allowedClasses: $allowed)->consume(static fn(): never => throw new LogicException('Must not dispatch rejected payloads.'));

@@ -11,9 +11,7 @@ use RuntimeException;
 #[Handler(InvitationHandler::class)]
 final class Invitation implements MessageInterface
 {
-    public function __construct(public string $merchantId, public string $invitationId)
-    {
-    }
+    public function __construct(public string $merchantId, public string $invitationId) {}
 
     public function __serialize(): array
     {
@@ -28,9 +26,7 @@ final class Invitation implements MessageInterface
 
 final readonly class InvitationHandler implements HandlerInterface
 {
-    public function handle(MessageInterface $message, Printer $printer): void
-    {
-    }
+    public function handle(MessageInterface $message, Printer $printer): void {}
 }
 
 final class PoisonMessage
@@ -49,9 +45,8 @@ final class MissingHandlerMessage implements MessageInterface
     {
         return [];
     }
-    public function __unserialize(array $data): void
-    {
-    }
+
+    public function __unserialize(array $data): void {}
 }
 
 #[Handler(InvitationHandler::class)]
@@ -61,6 +56,7 @@ final class ThrowingMessage implements MessageInterface
     {
         return [];
     }
+
     public function __unserialize(array $data): void
     {
         throw new RuntimeException('Invalid payload');

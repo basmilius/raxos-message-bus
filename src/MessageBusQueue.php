@@ -147,6 +147,7 @@ final readonly class MessageBusQueue implements MessageBusQueueInterface
      * Declares durable retry and dead queues after enabling publisher confirmations.
      *
      * @param QueuePolicy $policy
+     *
      * @return void
      * @throws Throwable
      * @author Bas Milius <bas@mili.us>
@@ -188,6 +189,7 @@ final readonly class MessageBusQueue implements MessageBusQueueInterface
      *
      * @param AMQPMessage $delivery
      * @param callable(HandlerInterface, MessageInterface):(bool|DeliveryOutcome) $callback
+     *
      * @return void
      * @throws Throwable
      * @author Bas Milius <bas@mili.us>
@@ -251,6 +253,7 @@ final readonly class MessageBusQueue implements MessageBusQueueInterface
      * Checks the top-level class before unserialization so unauthorized object hooks cannot run.
      *
      * @param string $body
+     *
      * @return MessageInterface|null
      * @author Bas Milius <bas@mili.us>
      * @since 3.3.0
@@ -281,6 +284,7 @@ final readonly class MessageBusQueue implements MessageBusQueueInterface
      *
      * @param AMQPMessage $message
      * @param DeliveryOutcome $outcome
+     *
      * @return void
      * @throws Throwable
      * @author Bas Milius <bas@mili.us>
@@ -327,6 +331,7 @@ final readonly class MessageBusQueue implements MessageBusQueueInterface
      *
      * @param AMQPMessage $message
      * @param string $route
+     *
      * @return void
      * @throws Throwable
      * @author Bas Milius <bas@mili.us>

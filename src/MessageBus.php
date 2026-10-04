@@ -93,6 +93,7 @@ final readonly class MessageBus implements MessageBusInterface
      * {@inheritdoc}
      * @param class-string[] $allowedClasses
      * @param QueuePolicy|null $policy
+     *
      * @author Bas Milius <bas@mili.us>
      * @since 1.8.0
      */

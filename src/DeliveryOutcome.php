@@ -21,15 +21,14 @@ final readonly class DeliveryOutcome
      *
      * @param string $action
      * @param int|null $delay
+     *
      * @author Bas Milius <bas@mili.us>
      * @since 3.3.0
      */
     private function __construct(
         public string $action,
         public ?int $delay = null
-    )
-    {
-    }
+    ) {}
 
     /**
      * Acknowledges successful processing without transferring the delivery to another queue.
@@ -47,6 +46,7 @@ final readonly class DeliveryOutcome
      * Requests another attempt; a null delay uses the queue policy's default delay.
      *
      * @param int|null $delay
+     *
      * @return self
      * @throws InvalidArgumentException
      * @author Bas Milius <bas@mili.us>

@@ -29,6 +29,7 @@ final readonly class QueuePolicy
      * @param array<array-key, mixed> $allowedDelays
      * @param float $confirmTimeout
      * @param Closure|null $handlerResolver
+     *
      * @throws InvalidArgumentException
      * @author Bas Milius <bas@mili.us>
      * @since 3.3.0
