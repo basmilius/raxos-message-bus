@@ -20,6 +20,7 @@ use function is_int;
  */
 final readonly class QueuePolicy
 {
+
     /**
      * Bounds delivery attempts and prefetch. Retry delays and confirmation timeout are measured in seconds.
      *
@@ -57,4 +58,5 @@ final readonly class QueuePolicy
             }
         }
     }
+
 }

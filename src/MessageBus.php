@@ -24,6 +24,7 @@ use Throwable;
  */
 final readonly class MessageBus implements MessageBusInterface
 {
+
     /**
      * Retains the connection used by this object for its entire lifetime.
      *
@@ -76,6 +77,7 @@ final readonly class MessageBus implements MessageBusInterface
 
     /**
      * {@inheritdoc}
+     *
      * @author Bas Milius <bas@mili.us>
      * @since 1.8.0
      */
@@ -91,6 +93,7 @@ final readonly class MessageBus implements MessageBusInterface
 
     /**
      * {@inheritdoc}
+     *
      * @param class-string[] $allowedClasses
      * @param QueuePolicy|null $policy
      *
@@ -119,6 +122,7 @@ final readonly class MessageBus implements MessageBusInterface
 
     /**
      * {@inheritdoc}
+     *
      * @author Bas Milius <bas@mili.us>
      * @since 1.8.0
      */
@@ -132,4 +136,5 @@ final readonly class MessageBus implements MessageBusInterface
 
         unset($this->channels[$offset]);
     }
+
 }

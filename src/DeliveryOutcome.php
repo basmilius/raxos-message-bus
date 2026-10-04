@@ -16,6 +16,7 @@ use Raxos\Error\InvalidArgumentException;
  */
 final readonly class DeliveryOutcome
 {
+
     /**
      * Restricts construction to the supported acknowledgement, retry and rejection factories.
      *
@@ -72,4 +73,5 @@ final readonly class DeliveryOutcome
     {
         return new self('reject');
     }
+
 }

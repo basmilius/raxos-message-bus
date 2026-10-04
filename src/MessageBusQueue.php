@@ -38,6 +38,7 @@ use function unserialize;
  */
 final readonly class MessageBusQueue implements MessageBusQueueInterface
 {
+
     /**
      * MessageBusQueue constructor.
      *
@@ -71,6 +72,7 @@ final readonly class MessageBusQueue implements MessageBusQueueInterface
 
     /**
      * {@inheritdoc}
+     *
      * @author Bas Milius <bas@mili.us>
      * @since 1.8.0
      */
@@ -82,6 +84,7 @@ final readonly class MessageBusQueue implements MessageBusQueueInterface
 
     /**
      * {@inheritdoc}
+     *
      * @author Bas Milius <bas@mili.us>
      * @since 1.8.0
      */
@@ -119,6 +122,7 @@ final readonly class MessageBusQueue implements MessageBusQueueInterface
 
     /**
      * {@inheritdoc}
+     *
      * @author Bas Milius <bas@mili.us>
      * @since 1.8.0
      */
@@ -367,4 +371,5 @@ final readonly class MessageBusQueue implements MessageBusQueueInterface
             $this->channel->set_return_listener(static fn() => null);
         }
     }
+
 }
